@@ -26,6 +26,7 @@ namespace Host
             sessionManager.OnStateChanged += HandleStateChanged;
             sessionManager.OnPlayerJoined += HandlePlayerJoined;
             sessionManager.OnPlayerLeft += HandlePlayerLeft;
+            sessionManager.OnAnswerSubmitted += HandleAnswerSubmitted;
         }
         
         private void OnDisable()
@@ -35,6 +36,7 @@ namespace Host
                 sessionManager.OnStateChanged -= HandleStateChanged;
                 sessionManager.OnPlayerJoined -= HandlePlayerJoined;
                 sessionManager.OnPlayerLeft -= HandlePlayerLeft;
+                sessionManager.OnAnswerSubmitted -= HandleAnswerSubmitted;
             }
         }
 
@@ -63,6 +65,10 @@ namespace Host
             else if (_keyboard.sKey.wasPressedThisFrame)
             {
                 StartGame();
+            }
+            else if (_keyboard.aKey.wasPressedThisFrame)
+            {
+                SubmitAllAnswers();
             }
         }
         
@@ -107,6 +113,30 @@ namespace Host
             }
         }
         
+        public void SubmitAllAnswers()
+        {
+            if (sessionManager.CurrentState != GameState.Submit)
+            {
+                Debug.LogWarning("[Tester] Not in Submit state");
+                return;
+            }
+
+            string[] sampleAnswers = new[] 
+            {
+                "strawberry",
+                "meatloaf",
+                "onion"
+            };
+
+            for (int i = 0; i < _testPlayerIds.Count; i++)
+            {
+                string answer = sampleAnswers[i % sampleAnswers.Length];
+                sessionManager.SubmitAnswer(_testPlayerIds[i], answer);
+            }
+
+            Debug.Log($"[Tester] Submitted {_testPlayerIds.Count} answers");
+        }
+        
         // Event handlers
         private void HandleStateChanged(GameState prev, GameState next)
         {
@@ -121,6 +151,11 @@ namespace Host
         private void HandlePlayerLeft(string playerId)
         {
             Debug.Log($"[Tester] Player Left: {playerId}");
+        }
+        
+        private void HandleAnswerSubmitted(string playerId, string answer)
+        {
+            Debug.Log($"[Tester] Answer Submitted: {answer}");
         }
     }
 }

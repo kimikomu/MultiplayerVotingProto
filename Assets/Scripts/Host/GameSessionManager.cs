@@ -20,6 +20,7 @@ namespace Host
         // State
         private GameState _currentState = GameState.Lobby;
         private Dictionary<string, PlayerData> _players;
+        private Dictionary<string, string> _playerAnswers;
         private string _currentPrompt;
         private int _currentPromptIndex = 0;
         private float _stateTimer = 0f;
@@ -28,6 +29,8 @@ namespace Host
         public event Action<GameState, GameState> OnStateChanged;
         public event Action<PlayerData> OnPlayerJoined;
         public event Action<string> OnPlayerLeft;
+        public event Action<string, string> OnAnswerSubmitted;
+
 
         public GameState CurrentState => _currentState;
         public IReadOnlyDictionary<string, PlayerData> Players => _players;
@@ -36,6 +39,7 @@ namespace Host
         private void Awake()
         {
             _players = new Dictionary<string, PlayerData>();
+            _playerAnswers = new Dictionary<string, string>();
             
             if (prompts == null || prompts.Length == 0)
             {
@@ -188,6 +192,8 @@ namespace Host
         // State Handlers
         private void OnEnterPrompt()
         {
+            _playerAnswers.Clear();
+            
             _currentPrompt = _currentPromptIndex < prompts.Length ? prompts[_currentPromptIndex] : "Default prompt";
             
             _stateTimer = promptTimeLimit;
@@ -213,6 +219,33 @@ namespace Host
         {
             _stateTimer = 0f;
             Debug.Log("Game Over!");
+        }
+        
+        
+        // Game Logic
+        public void SubmitAnswer(string playerId, string answer)
+        {
+            if (_currentState != GameState.Submit)
+            {
+                Debug.LogWarning("Not in Submit state");
+                return;
+            }
+
+            if (!_players.ContainsKey(playerId))
+            {
+                Debug.LogWarning($"Unknown player: {playerId}");
+                return;
+            }
+
+            _playerAnswers[playerId] = answer;
+            Debug.Log($"Answer from {_players[playerId].playerName}: {answer}");
+            OnAnswerSubmitted?.Invoke(playerId, answer);
+
+            // Auto-advance if everyone submitted
+            if (_playerAnswers.Count == _players.Count)
+            {
+                ChangeState(GameState.Vote);
+            }
         }
     }
 }
