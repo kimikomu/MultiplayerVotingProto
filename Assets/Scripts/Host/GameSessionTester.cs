@@ -23,17 +23,16 @@ namespace Host
         private void OnEnable()
         {
             // Subscribe to events for logging
-            //sessionManager.OnStateChanged += (prev, next) => 
-                //Debug.Log($"[Tester] State: {prev} -> {next}");
-            
-                sessionManager.OnPlayerJoined += HandlePlayerJoined;
-                sessionManager.OnPlayerLeft += HandlePlayerLeft;
+            sessionManager.OnStateChanged += HandleStateChanged;
+            sessionManager.OnPlayerJoined += HandlePlayerJoined;
+            sessionManager.OnPlayerLeft += HandlePlayerLeft;
         }
         
         private void OnDisable()
         {
             if (sessionManager != null)
             {
+                sessionManager.OnStateChanged -= HandleStateChanged;
                 sessionManager.OnPlayerJoined -= HandlePlayerJoined;
                 sessionManager.OnPlayerLeft -= HandlePlayerLeft;
             }
@@ -57,9 +56,13 @@ namespace Host
             {
                 AddTestPlayer("Charlie");
             }
-            else if (keyboard.digit4Key.wasPressedThisFrame)
+            else if (keyboard.digit0Key.wasPressedThisFrame)
             {
                 RemoveTestPlayer(0);
+            }
+            else if (keyboard.sKey.wasPressedThisFrame)
+            {
+                StartGame();
             }
         }
         
@@ -69,7 +72,7 @@ namespace Host
             if (result.success)
             {
                 testPlayerIds.Add(result.playerId);
-                Debug.Log($"[Tester] Added player: {testPlayerName} (Total: {sessionManager.PlayerCount})");
+                // Debug.Log($"[Tester] Added player: {testPlayerName} (Total: {sessionManager.PlayerCount})");
             }
             else
             {
@@ -88,7 +91,26 @@ namespace Host
             sessionManager.RemovePlayer(id);
             testPlayerIds.RemoveAt(index);
             
-            Debug.Log($"[Tester] Removed player at index {index} (Total: {sessionManager.PlayerCount})");
+            // Debug.Log($"[Tester] Removed player at index {index} (Total: {sessionManager.PlayerCount})");
+        }
+        
+        public void StartGame()
+        {
+            if (sessionManager.CanStartGame())
+            {
+                sessionManager.StartGame();
+                Debug.Log("[Tester] Game Started!");
+            }
+            else
+            {
+                Debug.LogWarning("[Tester] Cannot start game - need at least 3 players in lobby");
+            }
+        }
+        
+        // Event handlers
+        private void HandleStateChanged(GameState prev, GameState next)
+        {
+            Debug.Log($"[Tester] State: {prev} -> {next}");
         }
         
         private void HandlePlayerJoined(PlayerData player)

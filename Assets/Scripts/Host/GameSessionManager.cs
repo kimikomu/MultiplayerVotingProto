@@ -17,6 +17,7 @@ namespace Host
         private Dictionary<string, PlayerData> _players;
         
         // Events
+        public event Action<GameState, GameState> OnStateChanged;
         public event Action<PlayerData> OnPlayerJoined;
         public event Action<string> OnPlayerLeft;
 
@@ -73,13 +74,31 @@ namespace Host
             }
         }
         
+        
+        // State Machine
+        public bool CanStartGame()
+        {
+            return _currentState == GameState.Lobby && _players.Count >= minPlayers;
+        }
+        
+        public void StartGame()
+        {
+            if (!CanStartGame())
+            {
+                Debug.LogWarning("Cannot start game: not enough players or not in lobby");
+                return;
+            }
+
+            ChangeState(GameState.Prompt);
+        }
+        
         private void ChangeState(GameState newState)
         {
             GameState previousState = _currentState;
             _currentState = newState;
 
-            // Debug.Log($"State changed: {previousState} -> {newState}");
-            // OnStateChanged?.Invoke(previousState, newState);
+            Debug.Log($"State changed: {previousState} -> {newState}");
+            OnStateChanged?.Invoke(previousState, newState);
 
             switch (newState)
             {
