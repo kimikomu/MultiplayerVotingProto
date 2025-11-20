@@ -24,5 +24,10 @@ namespace Core
         {
             lastHeartbeat = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
+        
+        public bool IsTimedOut(long currentTime, long timeoutMs = 10000)
+        {
+            return currentTime - lastHeartbeat > timeoutMs;
+        }
     }
 }

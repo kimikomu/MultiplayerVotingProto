@@ -108,6 +108,14 @@ namespace Host
             }
         }
         
+        public void UpdatePlayerHeartbeat(string playerId)
+        {
+            if (_players.TryGetValue(playerId, out PlayerData player))
+            {
+                player.UpdateHeartbeat();
+            }
+        }
+        
         
         // State Machine
         public bool CanStartGame()
