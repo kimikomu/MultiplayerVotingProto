@@ -11,15 +11,8 @@ namespace Host
         [SerializeField] private int minPlayers = 3;
         [SerializeField] private int maxPlayers = 5;
         [SerializeField] private float promptTimeLimit = 60f;
-
-
-        [Header("Prompts")]
-        [SerializeField] private string[] prompts = new string[]
-        {
-            "What's the worst kind of ice cream?",
-            "What's the real reason dinosaurs are extinct?",
-            "Why is the duckfoot platypus the best animal that ever lived?"
-        };
+        
+        [Header("Prompts")] [SerializeField] private string[] prompts;
         
         // State
         private GameState _currentState = GameState.Lobby;
@@ -40,6 +33,14 @@ namespace Host
         private void Awake()
         {
             _players = new Dictionary<string, PlayerData>();
+            
+            if (prompts == null || prompts.Length == 0)
+            {
+                prompts = new string[3];
+                prompts[0] = "What's the worst kind of ice cream?";
+                prompts[1] = "What's the real reason dinosaurs are extinct?";
+                prompts[2] = "Why is the duckfoot platypus the best animal that ever lived?";
+            }
         }
         
         private void Update()
