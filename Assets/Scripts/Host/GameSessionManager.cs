@@ -11,6 +11,7 @@ namespace Host
         [SerializeField] private int minPlayers = 3;
         [SerializeField] private int maxPlayers = 5;
         [SerializeField] private float promptTimeLimit = 60f;
+        [SerializeField] private float submitTimeLimit = 45f;
         
         [Header("Prompts")] [SerializeField] private string[] prompts;
         
@@ -135,7 +136,7 @@ namespace Host
                     OnEnterPrompt();
                     break;
                 case GameState.Submit:
-                    // OnEnterSubmit();
+                    OnEnterSubmit();
                     break;
                 case GameState.Vote:
                     // OnEnterVote();
@@ -154,8 +155,12 @@ namespace Host
             switch (_currentState)
             {
                 case GameState.Prompt:
-                    Debug.Log($"Prompt going to submit!");
+                    Debug.Log($"Prompt going to Submit!");
                     ChangeState(GameState.Submit);
+                    break;
+                case GameState.Submit:
+                    Debug.Log($"Submit going to Vote!");
+                    ChangeState(GameState.Vote);
                     break;
             }
         }
@@ -167,6 +172,11 @@ namespace Host
             
             _stateTimer = promptTimeLimit;
             Debug.Log($"Prompt: {_currentPrompt}");
+        }
+        
+        private void OnEnterSubmit()
+        {
+            _stateTimer = submitTimeLimit;
         }
     }
 }
