@@ -138,7 +138,7 @@ namespace Host
             switch (newState)
             {
                 case GameState.Lobby:
-                    // OnEnterLobby();
+                    OnEnterLobby();
                     break;
                 case GameState.Prompt:
                     OnEnterPrompt();
@@ -192,6 +192,13 @@ namespace Host
         }
 
         // State Handlers
+        private void OnEnterLobby()
+        {
+            _playerAnswers.Clear();
+            playerVotes.Clear();
+            _stateTimer = 0f;
+        }
+        
         private void OnEnterPrompt()
         {
             _playerAnswers.Clear();
@@ -217,12 +224,20 @@ namespace Host
         private void OnEnterReveal()
         {
             _stateTimer = revealDuration;
+            CalculateScores();
         }
         
         private void OnEnterGameOver()
         {
             _stateTimer = 0f;
             Debug.Log("Game Over!");
+            
+            // Display final scores
+            var sortedPlayers = _players.Values.OrderByDescending(p => p.score).ToList();
+            for (int i = 0; i < sortedPlayers.Count; i++)
+            {
+                Debug.Log($"{i + 1}. {sortedPlayers[i].playerName}: {sortedPlayers[i].score} points");
+            }
         }
         
         
@@ -302,6 +317,53 @@ namespace Host
             if (playerVotes.Count == _players.Count)
             {
                 ChangeState(GameState.Reveal);
+            }
+        }
+        
+        public List<Payloads.VoteResult> GetVoteResults()
+        {
+            List<Payloads.VoteResult> results = new List<Payloads.VoteResult>();
+
+            foreach (var answerKvp in _playerAnswers)
+            {
+                string authorId = answerKvp.Key;
+                string answerText = answerKvp.Value;
+
+                var voters = playerVotes.Where(v => v.Value == authorId).Select(v => v.Key).ToArray();
+
+                results.Add(new Payloads.VoteResult
+                {
+                    optionId = authorId,
+                    optionText = answerText,
+                    voteCount = voters.Length,
+                    voterIds = voters,
+                    authorId = authorId
+                });
+            }
+
+            return results.OrderByDescending(r => r.voteCount).ToList();
+        }
+        
+        private void CalculateScores()
+        {
+            var results = GetVoteResults();
+
+            foreach (var result in results)
+            {
+                // Author gets points for votes received
+                if (_players.TryGetValue(result.authorId, out PlayerData author))
+                {
+                    author.score += result.voteCount * 100;
+                }
+
+                // Voters get points for voting
+                foreach (string voterId in result.voterIds)
+                {
+                    if (_players.TryGetValue(voterId, out PlayerData voter))
+                    {
+                        voter.score += 50;
+                    }
+                }
             }
         }
     }
