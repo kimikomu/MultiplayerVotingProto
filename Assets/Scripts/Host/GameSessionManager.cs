@@ -11,10 +11,19 @@ namespace Host
         [SerializeField] private int minPlayers = 3;
         [SerializeField] private int maxPlayers = 5;
 
+        [Header("Prompts")]
+        [SerializeField] private string[] prompts = new string[]
+        {
+            "What's the worst kind of ice cream?",
+            "What's the real reason dinosaurs are extinct?",
+            "Why is the duckfoot platypus the best animal that ever lived?"
+        };
         
         // State
         private GameState _currentState = GameState.Lobby;
         private Dictionary<string, PlayerData> _players;
+        private string currentPrompt;
+        private int currentPromptIndex = 0;
         
         // Events
         public event Action<GameState, GameState> OnStateChanged;
@@ -88,7 +97,8 @@ namespace Host
                 Debug.LogWarning("Cannot start game: not enough players or not in lobby");
                 return;
             }
-
+            
+            currentPromptIndex = 0;
             ChangeState(GameState.Prompt);
         }
         
@@ -106,7 +116,7 @@ namespace Host
                     // OnEnterLobby();
                     break;
                 case GameState.Prompt:
-                    // OnEnterPrompt();
+                    OnEnterPrompt();
                     break;
                 case GameState.Submit:
                     // OnEnterSubmit();
@@ -121,6 +131,14 @@ namespace Host
                     // OnEnterGameOver();
                     break;
             }
+        }
+
+        // State Handlers
+        private void OnEnterPrompt()
+        {
+            currentPrompt = currentPromptIndex < prompts.Length ? prompts[currentPromptIndex] : "Default prompt";
+
+            Debug.Log($"Prompt: {currentPrompt}");
         }
     }
 }
