@@ -9,15 +9,15 @@ namespace Host
     {
         [SerializeField] private GameSessionManager sessionManager;
         
-        private List<string> testPlayerIds;
-        private Keyboard keyboard;
+        private List<string> _testPlayerIds;
+        private Keyboard _keyboard;
         
         private void Awake()
         {
             if (sessionManager == null)
                 sessionManager = GetComponent<GameSessionManager>();
-            testPlayerIds = new List<string>();
-            keyboard = Keyboard.current;
+            _testPlayerIds = new List<string>();
+            _keyboard = Keyboard.current;
         }
         
         private void OnEnable()
@@ -40,27 +40,27 @@ namespace Host
 
         private void Update()
         {
-            if (keyboard == null)
+            if (_keyboard == null)
                 return;
             
             // Keyboard shortcuts for testing
-            if (keyboard.digit1Key.wasPressedThisFrame)
+            if (_keyboard.digit1Key.wasPressedThisFrame)
             {
                 AddTestPlayer("Alice");
             }
-            else if (keyboard.digit2Key.wasPressedThisFrame)
+            else if (_keyboard.digit2Key.wasPressedThisFrame)
             {
                 AddTestPlayer("Bob");
             }
-            else if (keyboard.digit3Key.wasPressedThisFrame)
+            else if (_keyboard.digit3Key.wasPressedThisFrame)
             {
                 AddTestPlayer("Charlie");
             }
-            else if (keyboard.digit0Key.wasPressedThisFrame)
+            else if (_keyboard.digit0Key.wasPressedThisFrame)
             {
                 RemoveTestPlayer(0);
             }
-            else if (keyboard.sKey.wasPressedThisFrame)
+            else if (_keyboard.sKey.wasPressedThisFrame)
             {
                 StartGame();
             }
@@ -71,7 +71,7 @@ namespace Host
             var result = sessionManager.AddPlayer(testPlayerName);
             if (result.success)
             {
-                testPlayerIds.Add(result.playerId);
+                _testPlayerIds.Add(result.playerId);
                 // Debug.Log($"[Tester] Added player: {testPlayerName} (Total: {sessionManager.PlayerCount})");
             }
             else
@@ -82,14 +82,14 @@ namespace Host
         
         private void RemoveTestPlayer(int index)
         {
-            if (testPlayerIds.Count <= 0)
+            if (_testPlayerIds.Count <= 0)
             {
                 return;
             }
             
-            string id = testPlayerIds[index];
+            string id = _testPlayerIds[index];
             sessionManager.RemovePlayer(id);
-            testPlayerIds.RemoveAt(index);
+            _testPlayerIds.RemoveAt(index);
             
             // Debug.Log($"[Tester] Removed player at index {index} (Total: {sessionManager.PlayerCount})");
         }
