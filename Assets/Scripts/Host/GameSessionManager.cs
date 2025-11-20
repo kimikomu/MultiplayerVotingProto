@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Core;
 using UnityEngine;
 
@@ -21,6 +22,7 @@ namespace Host
         private GameState _currentState = GameState.Lobby;
         private Dictionary<string, PlayerData> _players;
         private Dictionary<string, string> _playerAnswers;
+        private Dictionary<string, string> playerVotes = new Dictionary<string, string>();
         private string _currentPrompt;
         private int _currentPromptIndex = 0;
         private float _stateTimer = 0f;
@@ -30,7 +32,7 @@ namespace Host
         public event Action<PlayerData> OnPlayerJoined;
         public event Action<string> OnPlayerLeft;
         public event Action<string, string> OnAnswerSubmitted;
-
+        public event Action<string, string> OnVoteSubmitted;
 
         public GameState CurrentState => _currentState;
         public IReadOnlyDictionary<string, PlayerData> Players => _players;
@@ -193,8 +195,10 @@ namespace Host
         private void OnEnterPrompt()
         {
             _playerAnswers.Clear();
+            playerVotes.Clear();
             
-            _currentPrompt = _currentPromptIndex < prompts.Length ? prompts[_currentPromptIndex] : "Default prompt";
+            _currentPrompt = _currentPromptIndex < prompts.Length ?
+                prompts[_currentPromptIndex] : "Default prompt";
             
             _stateTimer = promptTimeLimit;
             Debug.Log($"Prompt: {_currentPrompt}");
@@ -245,6 +249,59 @@ namespace Host
             if (_playerAnswers.Count == _players.Count)
             {
                 ChangeState(GameState.Vote);
+            }
+        }
+        
+        public List<Payloads.VotingOption> GetVotingOptions()
+        {
+            List<Payloads.VotingOption> options = new List<Payloads.VotingOption>();
+
+            foreach (var kvp in _playerAnswers)
+            {
+                options.Add(new Payloads.VotingOption
+                {
+                    optionId = kvp.Key,
+                    optionText = kvp.Value,
+                    isPlayerAnswer = true
+                });
+            }
+
+            // Shuffle options
+            System.Random rng = new System.Random();
+            options = options.OrderBy(x => rng.Next()).ToList();
+
+            return options;
+        }
+        
+        public void SubmitVote(string playerId, string selectedOptionId)
+        {
+            if (_currentState != GameState.Vote)
+            {
+                Debug.LogWarning("Not in Vote state");
+                return;
+            }
+
+            if (!_players.ContainsKey(playerId))
+            {
+                Debug.LogWarning($"Unknown player: {playerId}");
+                return;
+            }
+
+            // Players can't vote for their own answer
+            if (selectedOptionId == playerId)
+            {
+                Debug.LogWarning($"Player {playerId} tried to vote for their own answer");
+                return;
+            }
+
+            playerVotes[playerId] = selectedOptionId;
+            Debug.Log($"Vote from {_players[playerId].playerName} for option {selectedOptionId}");
+            OnVoteSubmitted?.Invoke(playerId, selectedOptionId);
+
+            // Auto-advance if everyone voted
+            if (playerVotes.Count == _players.Count)
+            {
+                ChangeState(GameState.Reveal);
             }
         }
     }

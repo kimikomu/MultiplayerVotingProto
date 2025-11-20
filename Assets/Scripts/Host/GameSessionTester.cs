@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -27,6 +28,7 @@ namespace Host
             sessionManager.OnPlayerJoined += HandlePlayerJoined;
             sessionManager.OnPlayerLeft += HandlePlayerLeft;
             sessionManager.OnAnswerSubmitted += HandleAnswerSubmitted;
+            sessionManager.OnVoteSubmitted += HandleVoteSubmitted;
         }
         
         private void OnDisable()
@@ -37,6 +39,7 @@ namespace Host
                 sessionManager.OnPlayerJoined -= HandlePlayerJoined;
                 sessionManager.OnPlayerLeft -= HandlePlayerLeft;
                 sessionManager.OnAnswerSubmitted -= HandleAnswerSubmitted;
+                sessionManager.OnVoteSubmitted -= HandleVoteSubmitted;
             }
         }
 
@@ -70,8 +73,13 @@ namespace Host
             {
                 SubmitAllAnswers();
             }
+            else if (_keyboard.vKey.wasPressedThisFrame)
+            {
+                SubmitAllVotes();
+            }
         }
         
+        // Test Actions
         private void AddTestPlayer(string testPlayerName)
         {
             var result = sessionManager.AddPlayer(testPlayerName);
@@ -137,6 +145,30 @@ namespace Host
             Debug.Log($"[Tester] Submitted {_testPlayerIds.Count} answers");
         }
         
+        public void SubmitAllVotes()
+        {
+            if (sessionManager.CurrentState != GameState.Vote)
+            {
+                Debug.LogWarning("[Tester] Not in Vote state");
+                return;
+            }
+
+            var options = sessionManager.GetVotingOptions();
+            
+            // Each player votes for a random option (not their own)
+            foreach (string playerId in _testPlayerIds)
+            {
+                var votableOptions = options.Where(o => o.optionId != playerId).ToList();
+                if (votableOptions.Count > 0)
+                {
+                    var randomOption = votableOptions[Random.Range(0, votableOptions.Count)];
+                    sessionManager.SubmitVote(playerId, randomOption.optionId);
+                }
+            }
+
+            Debug.Log($"[Tester] Submitted {_testPlayerIds.Count} votes");
+        }
+        
         // Event handlers
         private void HandleStateChanged(GameState prev, GameState next)
         {
@@ -156,6 +188,11 @@ namespace Host
         private void HandleAnswerSubmitted(string playerId, string answer)
         {
             Debug.Log($"[Tester] Answer Submitted: {answer}");
+        }
+        
+        private void HandleVoteSubmitted(string playerId, string optionId)
+        {
+            Debug.Log($"[Tester] Vote Submitted by {playerId}");
         }
     }
 }
