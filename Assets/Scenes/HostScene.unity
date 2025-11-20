@@ -443,6 +443,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Host.GameSessionManager
   minPlayers: 3
   maxPlayers: 5
+  promptTimeLimit: 60
+  submitTimeLimit: 45
+  voteTimeLimit: 30
+  revealDuration: 10
+  prompts: []
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
