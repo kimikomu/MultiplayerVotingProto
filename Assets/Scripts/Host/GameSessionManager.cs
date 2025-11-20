@@ -12,6 +12,8 @@ namespace Host
         [SerializeField] private int maxPlayers = 5;
         [SerializeField] private float promptTimeLimit = 60f;
         [SerializeField] private float submitTimeLimit = 45f;
+        [SerializeField] private float voteTimeLimit = 30f;
+        [SerializeField] private float revealDuration = 10f;
         
         [Header("Prompts")] [SerializeField] private string[] prompts;
         
@@ -139,13 +141,13 @@ namespace Host
                     OnEnterSubmit();
                     break;
                 case GameState.Vote:
-                    // OnEnterVote();
+                    OnEnterVote();
                     break;
                 case GameState.Reveal:
-                    // OnEnterReveal();
+                    OnEnterReveal();
                     break;
                 case GameState.GameOver:
-                    // OnEnterGameOver();
+                    OnEnterGameOver();
                     break;
             }
         }
@@ -162,6 +164,24 @@ namespace Host
                     Debug.Log($"Submit going to Vote!");
                     ChangeState(GameState.Vote);
                     break;
+                case GameState.Vote:
+                    Debug.Log($"Vote going to Reveal!");
+                    ChangeState(GameState.Reveal);
+                    break;
+                case GameState.Reveal:
+                    // Next round or game over
+                    _currentPromptIndex++;
+                    if (_currentPromptIndex < prompts.Length)
+                    {
+                        Debug.Log($"Reveal going to Prompt!");
+                        ChangeState(GameState.Prompt);
+                    }
+                    else
+                    {
+                        Debug.Log($"Reveal going to GameOver!");
+                        ChangeState(GameState.GameOver);
+                    }
+                    break;
             }
         }
 
@@ -177,6 +197,22 @@ namespace Host
         private void OnEnterSubmit()
         {
             _stateTimer = submitTimeLimit;
+        }
+        
+        private void OnEnterVote()
+        {
+            _stateTimer = voteTimeLimit;
+        }
+
+        private void OnEnterReveal()
+        {
+            _stateTimer = revealDuration;
+        }
+        
+        private void OnEnterGameOver()
+        {
+            _stateTimer = 0f;
+            Debug.Log("Game Over!");
         }
     }
 }
