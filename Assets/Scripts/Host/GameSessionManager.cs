@@ -10,6 +10,8 @@ namespace Host
         [Header("Game Configuration")]
         [SerializeField] private int minPlayers = 3;
         [SerializeField] private int maxPlayers = 5;
+        [SerializeField] private float promptTimeLimit = 60f;
+
 
         [Header("Prompts")]
         [SerializeField] private string[] prompts = new string[]
@@ -22,8 +24,9 @@ namespace Host
         // State
         private GameState _currentState = GameState.Lobby;
         private Dictionary<string, PlayerData> _players;
-        private string currentPrompt;
-        private int currentPromptIndex = 0;
+        private string _currentPrompt;
+        private int _currentPromptIndex = 0;
+        private float _stateTimer = 0f;
         
         // Events
         public event Action<GameState, GameState> OnStateChanged;
@@ -37,6 +40,18 @@ namespace Host
         private void Awake()
         {
             _players = new Dictionary<string, PlayerData>();
+        }
+        
+        private void Update()
+        {
+            if (_currentState != GameState.Lobby)
+            {
+                _stateTimer -= Time.deltaTime;
+                if (_stateTimer <= 0)
+                {
+                    OnStateTimerExpired();
+                }
+            }
         }
         
         // Player Management
@@ -98,7 +113,7 @@ namespace Host
                 return;
             }
             
-            currentPromptIndex = 0;
+            _currentPromptIndex = 0;
             ChangeState(GameState.Prompt);
         }
         
@@ -132,13 +147,25 @@ namespace Host
                     break;
             }
         }
+        
+        private void OnStateTimerExpired()
+        {
+            switch (_currentState)
+            {
+                case GameState.Prompt:
+                    Debug.Log($"Prompt going to submit!");
+                    ChangeState(GameState.Submit);
+                    break;
+            }
+        }
 
         // State Handlers
         private void OnEnterPrompt()
         {
-            currentPrompt = currentPromptIndex < prompts.Length ? prompts[currentPromptIndex] : "Default prompt";
-
-            Debug.Log($"Prompt: {currentPrompt}");
+            _currentPrompt = _currentPromptIndex < prompts.Length ? prompts[_currentPromptIndex] : "Default prompt";
+            
+            _stateTimer = promptTimeLimit;
+            Debug.Log($"Prompt: {_currentPrompt}");
         }
     }
 }
