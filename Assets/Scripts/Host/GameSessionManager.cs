@@ -18,6 +18,7 @@ namespace Host
         
         // Events
         public event Action<PlayerData> OnPlayerJoined;
+        public event Action<string> OnPlayerLeft;
 
         public GameState CurrentState => _currentState;
         public IReadOnlyDictionary<string, PlayerData> Players => _players;
@@ -54,6 +55,22 @@ namespace Host
             OnPlayerJoined?.Invoke(newPlayer);
 
             return (true, playerId, "");
+        }
+        
+        public void RemovePlayer(string playerId)
+        {
+            if (_players.ContainsKey(playerId))
+            {
+                Debug.Log($"Player left: {_players[playerId].playerName}");
+                _players.Remove(playerId);
+                OnPlayerLeft?.Invoke(playerId);
+
+                // If we're in a game and not enough players, return to the lobby
+                if (_currentState != GameState.Lobby && _players.Count < minPlayers)
+                {
+                    ChangeState(GameState.Lobby);
+                }
+            }
         }
         
         private void ChangeState(GameState newState)
