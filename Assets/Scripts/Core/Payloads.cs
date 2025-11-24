@@ -5,6 +5,28 @@ namespace Core
     public class Payloads
     {
         [Serializable]
+        public class JoinRequestPayload
+        {
+            public string playerName;
+        }
+
+        [Serializable]
+        public class JoinResponsePayload
+        {
+            public bool success;
+            public string playerId;
+            public string playerName;
+            public string reason;
+        }
+
+        [Serializable]
+        public class PlayerJoinedPayload
+        {
+            public string playerId;
+            public string playerName;
+        }
+        
+        [Serializable]
         public class VotingOption
         {
             public string optionId;
@@ -20,6 +42,13 @@ namespace Core
             public int voteCount;
             public string[] voterIds;
             public string authorId;
+        }
+        
+        [Serializable]
+        public class StateChangedPayload
+        {
+            public string newState;
+            public float timeLimit;
         }
     }
 }
