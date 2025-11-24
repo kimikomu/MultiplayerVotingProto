@@ -4,6 +4,9 @@ using System.Linq;
 using Core;
 using UnityEngine;
 
+// [GameSessionManager] ←→ [HostNetworkManager] ←→ [Network Transport] ←→ [Clients]
+// (Game Logic)           (Translation Layer)      (Network Layer)
+
 namespace Host
 {
     public class GameSessionManager : MonoBehaviour
