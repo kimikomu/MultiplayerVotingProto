@@ -37,6 +37,8 @@ namespace Host
             transport.OnClientConnected += HandleClientConnected;
             transport.OnClientDisconnected += HandleClientDisconnected;
             transport.OnMessageReceived += HandleMessageReceived;
+            
+            sessionManager.OnPlayerJoined += HandlePlayerJoined;
         } 
         
         private void OnDisable()
@@ -44,6 +46,8 @@ namespace Host
             transport.OnClientConnected -= HandleClientConnected;
             transport.OnClientDisconnected -= HandleClientDisconnected;
             transport.OnMessageReceived -= HandleMessageReceived;
+            
+            sessionManager.OnPlayerJoined -= HandlePlayerJoined;
         }
         
         public void StartHost()
@@ -121,11 +125,29 @@ namespace Host
                 _playerIdToClient[result.playerId] = clientId;
             }
             
-            // Send response back to the client
+            // Send the response back to the client
             NetworkMessage responseMsg = new NetworkMessage(MessageTypes.JOIN_RESPONSE, JsonUtility.ToJson(response), "host");
             transport.SendToClient(clientId, responseMsg.ToJson());
             
             Debug.Log($"Join request from {request.playerName}: {(result.success ? "SUCCESS" : result.reason)}");
+        }
+        
+        private void HandlePlayerJoined(PlayerData player)
+        {
+            Payloads.PlayerJoinedPayload payload = new Payloads.PlayerJoinedPayload
+            {
+                playerId = player.playerId,
+                playerName = player.playerName
+            };
+
+            BroadcastToAll(MessageTypes.PLAYER_JOINED, JsonUtility.ToJson(payload));
+        }
+        
+        // Sending Messages
+        private void BroadcastToAll(string messageType, string payloadJson)
+        {
+            NetworkMessage message = new NetworkMessage(messageType, payloadJson, "host");
+            transport.SendToAllClients(message.ToJson());
         }
     }
 }

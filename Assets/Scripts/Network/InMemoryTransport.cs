@@ -99,7 +99,7 @@ namespace Network
             if (!_isServer) return;
             // In real implementation, route to a specific client
             // For this in-memory version with a single client, just enqueue
-            if (targetClientId == _clientId)
+            if (_isClient && targetClientId == _clientId)
             {
                 _clientMessageQueue.Enqueue(message);
             }
@@ -108,13 +108,20 @@ namespace Network
         public override void SendToServer(string message)
         {
             if (!_isClient || !_isConnected) return;
-            _serverMessageQueue.Enqueue((_clientId, message));
+            
+            if (_isServer)
+            {
+                _serverMessageQueue.Enqueue((_clientId, message));
+            }
         }
 
         public override void SendToAllClients(string message)
         {
             if (!_isServer) return;
-            _clientMessageQueue.Enqueue(message);
+            if (_isClient)
+            {
+                _clientMessageQueue.Enqueue(message);
+            }
         }
     }
 }

@@ -12,6 +12,10 @@ namespace Client
 
         [Header("UI Panels")]
         [SerializeField] private GameObject joinPanel;
+        [SerializeField] private GameObject waitingPanel;
+        
+        [Header("Waiting UI")]
+        [SerializeField] private TextMeshProUGUI waitingText;
         
         [Header("Join UI")]
         [SerializeField] private TMP_InputField playerNameInput;
@@ -63,7 +67,9 @@ namespace Client
         {
             if (payload.success)
             {
-                Debug.Log($"Welcome, {payload.playerName}!\nWaiting for game to start...");
+                ShowPanel(waitingPanel);
+                if (waitingText != null)
+                    waitingText.text = $"Welcome, {payload.playerName}!\nWaiting for game to start...";
             }
             else
             {
