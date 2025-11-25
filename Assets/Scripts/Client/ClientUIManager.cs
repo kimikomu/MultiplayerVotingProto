@@ -82,6 +82,7 @@ namespace Client
         private void ShowPanel(GameObject panel)
         {
             joinPanel?.SetActive(panel == joinPanel);
+            waitingPanel?.SetActive(panel == waitingPanel);
         }
     }
 }
