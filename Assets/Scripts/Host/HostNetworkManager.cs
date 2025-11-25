@@ -15,7 +15,7 @@ namespace Host
         [SerializeField] private InMemoryTransport transport;
 
         // Maps network client IDs to game player IDs
-        private Dictionary<string, string> _clientIdToPlayerId;
+        private Dictionary<string, string> _clientToPlayerId;
         
         // Maps game player IDs back to network client IDs
         private Dictionary<string, string> _playerIdToClient;
@@ -23,12 +23,16 @@ namespace Host
         private void Awake()
         {
             if (sessionManager == null)
+            {
                 sessionManager = GetComponent<GameSessionManager>();
+            }
 
             if (transport == null)
+            {
                 transport = GetComponent<InMemoryTransport>();
+            }
             
-            _clientIdToPlayerId = new Dictionary<string, string>();
+            _clientToPlayerId = new Dictionary<string, string>();
             _playerIdToClient = new Dictionary<string, string>();
         }
 
@@ -58,6 +62,14 @@ namespace Host
             Debug.Log($"Host started on port {serverPort}");
         }
         
+        public void StopHost()
+        {
+            transport.StopServer();
+            _clientToPlayerId.Clear();
+            _playerIdToClient.Clear();
+            Debug.Log("Host stopped");
+        }
+        
         // Network Event Handlers
         private void HandleClientConnected(string clientId)
         {
@@ -68,10 +80,10 @@ namespace Host
         {
             Debug.Log($"Client disconnected: {clientId}");
             
-            if (_clientIdToPlayerId.TryGetValue(clientId, out string playerId))
+            if (_clientToPlayerId.TryGetValue(clientId, out string playerId))
             {
                 sessionManager.RemovePlayer(playerId);
-                _clientIdToPlayerId.Remove(clientId);
+                _clientToPlayerId.Remove(clientId);
                 _playerIdToClient.Remove(playerId);
             }
         }
@@ -123,7 +135,7 @@ namespace Host
             // Map client to player if successful
             if (result.success)
             {
-                _clientIdToPlayerId[clientId] = result.playerId;
+                _clientToPlayerId[clientId] = result.playerId;
                 _playerIdToClient[result.playerId] = clientId;
             }
             

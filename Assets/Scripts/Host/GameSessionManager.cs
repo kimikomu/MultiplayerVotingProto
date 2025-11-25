@@ -340,7 +340,9 @@ namespace Host
                 string authorId = answerKvp.Key;
                 string answerText = answerKvp.Value;
 
-                var voters = playerVotes.Where(v => v.Value == authorId).Select(v => v.Key).ToArray();
+                var voters = playerVotes
+                    .Where(v => v.Value == authorId)
+                    .Select(v => v.Key).ToArray();
 
                 results.Add(new Payloads.VoteResult
                 {
