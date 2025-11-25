@@ -70,7 +70,7 @@ namespace Host
         // Player Management
         public bool CanJoin()
         {
-            return _currentState == GameState.Lobby;
+            return _currentState == GameState.Lobby && _players.Count < maxPlayers;
         }
         
         public (bool success, string playerId, string reason) AddPlayer(string playerName)
