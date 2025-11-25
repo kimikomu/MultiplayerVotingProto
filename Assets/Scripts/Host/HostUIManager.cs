@@ -18,6 +18,18 @@ namespace Host
         [SerializeField] private TextMeshProUGUI playerListText;
         [SerializeField] private TextMeshProUGUI roomCodeText;
         
+        private void Awake()
+        {
+            if (sessionManager == null)
+            {
+                sessionManager = GetComponent<GameSessionManager>();
+            }
+            if (networkManager == null)
+            {
+                networkManager = GetComponent<HostNetworkManager>();
+            }
+        }
+        
         private void OnEnable()
         {
             sessionManager.OnPlayerJoined += HandlePlayerJoined;
@@ -40,7 +52,9 @@ namespace Host
         {
             networkManager.StartHost();
             if (roomCodeText != null)
+            {
                 roomCodeText.text = "Room Code: HOST";
+            }
         }
         
         private void HandlePlayerJoined(PlayerData player)

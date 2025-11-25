@@ -39,6 +39,7 @@ namespace Host
             transport.OnMessageReceived += HandleMessageReceived;
             
             sessionManager.OnPlayerJoined += HandlePlayerJoined;
+            sessionManager.OnPlayerLeft += HandlePlayerLeft;
         } 
         
         private void OnDisable()
@@ -48,6 +49,7 @@ namespace Host
             transport.OnMessageReceived -= HandleMessageReceived;
             
             sessionManager.OnPlayerJoined -= HandlePlayerJoined;
+            sessionManager.OnPlayerLeft -= HandlePlayerLeft;
         }
         
         public void StartHost()
@@ -141,6 +143,13 @@ namespace Host
             };
 
             BroadcastToAll(MessageTypes.PLAYER_JOINED, JsonUtility.ToJson(payload));
+        }
+        
+        private void HandlePlayerLeft(string playerId)
+        {
+            // Broadcast player-left message
+            string payload = JsonUtility.ToJson(new { playerId });
+            BroadcastToAll(MessageTypes.PLAYER_LEFT, payload);
         }
         
         // Sending Messages

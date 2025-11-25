@@ -9,15 +9,24 @@ namespace Host
     public class GameSessionTester : MonoBehaviour
     {
         [SerializeField] private GameSessionManager sessionManager;
+        [SerializeField] private bool useNetworkedClients = false;
         
+        [Tooltip( "Assign a prefab with ClientNetworkManager + ClientUIManager" )]
+        [SerializeField] private GameObject clientPrefab;
+
         private List<string> _testPlayerIds;
+        private List<GameObject> _clientInstances;
         private Keyboard _keyboard;
         
         private void Awake()
         {
             if (sessionManager == null)
+            {
                 sessionManager = GetComponent<GameSessionManager>();
+            }
+            
             _testPlayerIds = new List<string>();
+            _clientInstances = new List<GameObject>();
             _keyboard = Keyboard.current;
         }
         
@@ -51,15 +60,23 @@ namespace Host
             // Keyboard shortcuts for testing
             if (_keyboard.digit1Key.wasPressedThisFrame)
             {
-                AddTestPlayer("Alice");
+                AddTestPlayer("Kimiko");
             }
             else if (_keyboard.digit2Key.wasPressedThisFrame)
             {
-                AddTestPlayer("Bob");
+                AddTestPlayer("Mike");
             }
             else if (_keyboard.digit3Key.wasPressedThisFrame)
             {
-                AddTestPlayer("Charlie");
+                AddTestPlayer("Max");
+            }
+            else if (_keyboard.digit4Key.wasPressedThisFrame)
+            {
+                AddTestPlayer("Alexis");
+            }
+            else if (_keyboard.digit5Key.wasPressedThisFrame)
+            {
+                AddTestPlayer("Kyle");
             }
             else if (_keyboard.digit0Key.wasPressedThisFrame)
             {
@@ -82,11 +99,22 @@ namespace Host
         // Test Actions
         private void AddTestPlayer(string testPlayerName)
         {
+            if (useNetworkedClients)
+            {
+                AddNetworkedClient(testPlayerName);
+            }
+            else
+            {
+                AddDirectPlayer(testPlayerName);
+            }
+        }
+        
+        private void AddDirectPlayer(string testPlayerName)
+        {
             var result = sessionManager.AddPlayer(testPlayerName);
             if (result.success)
             {
                 _testPlayerIds.Add(result.playerId);
-                // Debug.Log($"[Tester] Added player: {testPlayerName} (Total: {sessionManager.PlayerCount})");
             }
             else
             {
@@ -94,18 +122,48 @@ namespace Host
             }
         }
         
-        private void RemoveTestPlayer(int index)
+        private void AddNetworkedClient(string testPlayerName)
         {
-            if (_testPlayerIds.Count <= 0)
+            if (clientPrefab == null)
             {
+                Debug.LogError("[Tester] Client prefab not assigned!");
                 return;
             }
             
-            string id = _testPlayerIds[index];
-            sessionManager.RemovePlayer(id);
-            _testPlayerIds.RemoveAt(index);
+            GameObject clientInstance = Instantiate(clientPrefab);
+            clientInstance.name = $"Client_{testPlayerName}";
+            _clientInstances.Add(clientInstance);
             
-            // Debug.Log($"[Tester] Removed player at index {index} (Total: {sessionManager.PlayerCount})");
+            var clientNetwork = clientInstance.GetComponent<Client.ClientNetworkManager>();
+            if (clientNetwork != null)
+            {
+                clientNetwork.ConnectToServer(testPlayerName);
+            }
+            
+            Debug.Log($"[Tester] Spawned networked client: {testPlayerName}");
+        }
+        
+        private void RemoveTestPlayer(int index)
+        {
+            if (useNetworkedClients)
+            {
+                if (_clientInstances.Count > 0)
+                {
+                    GameObject clientToRemove = _clientInstances[index];
+                    _clientInstances.RemoveAt(index);
+                    Destroy(clientToRemove);
+                    Debug.Log($"[Tester] Removed networked client at index {index}");
+                }
+            }
+            else
+            {
+                if (_testPlayerIds.Count > 0)
+                {
+                    string id = _testPlayerIds[index];
+                    sessionManager.RemovePlayer(id);
+                    _testPlayerIds.RemoveAt(index);
+                }
+            }
         }
         
         public void StartGame()
@@ -133,7 +191,9 @@ namespace Host
             {
                 "strawberry",
                 "meatloaf",
-                "onion"
+                "onion",
+                "pickles",
+                "broccoli"
             };
 
             for (int i = 0; i < _testPlayerIds.Count; i++)
@@ -193,6 +253,19 @@ namespace Host
         private void HandleVoteSubmitted(string playerId, string optionId)
         {
             Debug.Log($"[Tester] Vote Submitted by {playerId}");
+        }
+        
+        private void OnDestroy()
+        {
+            // Clean up any spawned clients
+            foreach (var client in _clientInstances)
+            {
+                if (client != null)
+                {
+                    Destroy(client);
+                }
+            }
+            _clientInstances.Clear();
         }
     }
 }

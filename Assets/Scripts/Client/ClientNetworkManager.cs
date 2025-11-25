@@ -18,9 +18,28 @@ namespace Client
         public event Action<Payloads.JoinResponsePayload> OnJoinResponse;
         public event Action<Payloads.PlayerJoinedPayload> OnPlayerJoined;
         
+        private void Awake()
+        {
+            if (transport == null)
+            {
+                transport = GetComponent<InMemoryTransport>();
+            }
+        }
+        
         private void OnEnable()
         {
-            transport.OnMessageReceived += HandleMessageReceived;
+            if (transport != null)
+            {
+                transport.OnMessageReceived += HandleMessageReceived;
+            }
+        }
+        
+        private void OnDisable()
+        {
+            if (transport != null)
+            {
+                transport.OnMessageReceived -= HandleMessageReceived;
+            }
         }
         
         public void ConnectToServer(string playerName)
@@ -94,6 +113,14 @@ namespace Client
                 case MessageTypes.PLAYER_JOINED:
                     HandlePlayerJoined(message);
                     break;
+            }
+        }
+                
+        private void OnDestroy()
+        {
+            if (transport != null && transport.IsConnected)
+            {
+                transport.Disconnect();
             }
         }
     }

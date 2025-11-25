@@ -10,13 +10,22 @@ namespace Network
     // Simple in-memory transport for testing (simulates network with message queue)
     public class InMemoryTransport : SimpleNetworkTransport
     {
+        // Singleton server instance for all clients to connect to
+        private static InMemoryTransport _serverInstance;
+        
         private bool _isServer = false;
         private bool _isClient = false;
         private bool _isConnected = false;
         private string _clientId = "";
         
+        // Server-side: messages received from clients
         private Queue<(string senderId, string message)> _serverMessageQueue;
+        
+        // Client-side: messages received from server
         private Queue<string> _clientMessageQueue;
+        
+        // Server-side: track all connected clients
+        private Dictionary<string, Queue<string>> _clientQueues;
 
         public override bool IsServer => _isServer;
         public override bool IsClient => _isClient;
@@ -26,6 +35,7 @@ namespace Network
         {
             _serverMessageQueue = new Queue<(string, string)>();
             _clientMessageQueue = new Queue<string>();
+            _clientQueues = new Dictionary<string, Queue<string>>();
         }
 
         private void Update()
@@ -54,6 +64,8 @@ namespace Network
         {
             _isServer = true;
             _isConnected = true;
+            _serverInstance = this;
+            
             Debug.Log($"[InMemoryTransport] Server started on port {port}");
         }
 
@@ -62,65 +74,103 @@ namespace Network
             _isServer = false;
             _isConnected = false;
             _serverMessageQueue.Clear();
+            _clientQueues.Clear();
+            
+            if (_serverInstance == this)
+            {
+                _serverInstance = null;
+            }
+            
             Debug.Log("[InMemoryTransport] Server stopped");
         }
 
         public override void Connect(string address, int port)
         {
+            if (_serverInstance == null)
+            {
+                Debug.LogError("[InMemoryTransport] Cannot connect - no server running");
+                return;
+            }
+            
             _isClient = true;
             _isConnected = true;
             _clientId = Guid.NewGuid().ToString();
+            
+            // Create queue for this client on the server
+            _serverInstance._clientQueues[_clientId] = _clientMessageQueue;
+            
             Debug.Log($"[InMemoryTransport] Client connected: {_clientId}");
             
             // Notify server (simulate)
-            if (_isServer)
-            {
-                InvokeClientConnected(_clientId);
-            }
+            _serverInstance.InvokeClientConnected(_clientId);
         }
 
         public override void Disconnect()
         {
-            if (_isClient && _isConnected)
+            if (!_isClient || !_isConnected)
+                return;
+        
+            Debug.Log($"[InMemoryTransport] Client disconnected: {_clientId}");
+            if (_serverInstance != null)
             {
-                Debug.Log($"[InMemoryTransport] Client disconnected: {_clientId}");
-                if (_isServer)
-                {
-                    InvokeClientDisconnected(_clientId);
-                }
-                _isClient = false;
-                _isConnected = false;
-                _clientMessageQueue.Clear();
+                _serverInstance.InvokeClientDisconnected(_clientId);
+                _serverInstance._clientQueues.Remove(_clientId);
             }
+            
+            _isClient = false;
+            _isConnected = false;
+            _clientMessageQueue.Clear();
         }
 
         public override void SendToClient(string targetClientId, string message)
         {
             if (!_isServer) return;
-            // In real implementation, route to a specific client
-            // For this in-memory version with a single client, just enqueue
-            if (_isClient && targetClientId == _clientId)
+            
+            // Find the target client's queue and enqueue the message
+            if (_clientQueues.TryGetValue(targetClientId, out Queue<string> queue))
             {
-                _clientMessageQueue.Enqueue(message);
+                queue.Enqueue(message);
+            }
+            else
+            {
+                Debug.LogWarning($"[InMemoryTransport] Cannot send to client {targetClientId} - not found");
             }
         }
 
         public override void SendToServer(string message)
         {
-            if (!_isClient || !_isConnected) return;
-            
-            if (_isServer)
+            if (!_isClient || !_isConnected)
             {
-                _serverMessageQueue.Enqueue((_clientId, message));
+                Debug.LogWarning("[InMemoryTransport] Cannot send to server - not connected");
+                return;
+            }
+            
+            if (_serverInstance != null)
+            {
+                _serverInstance._serverMessageQueue.Enqueue((_clientId, message));
             }
         }
 
         public override void SendToAllClients(string message)
         {
             if (!_isServer) return;
-            if (_isClient)
+            
+            // Enqueue message to all connected clients
+            foreach (var queue in _clientQueues.Values)
             {
-                _clientMessageQueue.Enqueue(message);
+                queue.Enqueue(message);
+            }
+        }
+        
+        private void OnDestroy()
+        {
+            if (_isServer)
+            {
+                StopServer();
+            }
+            else if (_isClient)
+            {
+                Disconnect();
             }
         }
     }
