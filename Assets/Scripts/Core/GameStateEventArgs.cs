@@ -7,14 +7,4 @@ namespace Core
         public GameState PreviousState { get; set; }
         public GameState NewState { get; set; }
     }
-    
-    public enum GameState
-    {
-        Lobby,
-        Prompt,
-        Submit,
-        Vote,
-        Reveal,
-        GameOver
-    }
 }
