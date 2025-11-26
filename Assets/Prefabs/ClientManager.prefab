@@ -170,8 +170,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 312.5, y: 0}
-  m_SizeDelta: {x: -625, y: 0}
+  m_AnchoredPosition: {x: 261.5, y: 0}
+  m_SizeDelta: {x: -523, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &2924628163715511117
 GameObject:
@@ -399,7 +399,7 @@ Transform:
   m_GameObject: {fileID: 4846813725600862143}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 10, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -436,10 +436,13 @@ MonoBehaviour:
   networkManager: {fileID: 6072548587929742148}
   joinPanel: {fileID: 3719754567617076719}
   waitingPanel: {fileID: 5065538039481450512}
+  promptPanel: {fileID: 0}
   waitingText: {fileID: 67647623610895641}
   playerNameInput: {fileID: 6217518583825764904}
   joinButton: {fileID: 215671996468226100}
   joinStatusText: {fileID: 1024164987928047234}
+  promptDisplayText: {fileID: 0}
+  promptTimerText: {fileID: 0}
 --- !u!1 &4981198193145932796
 GameObject:
   m_ObjectHideFlags: 0
