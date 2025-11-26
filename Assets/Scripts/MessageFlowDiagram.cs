@@ -1,5 +1,5 @@
 
-// Message Flow Diagram - AI generated
+// Message Flow Diagram - AI-generated
 // Examples of how messages are processed on the client and server.
 
 // Example 1: Game Start → Client Join
@@ -493,4 +493,47 @@ Ready for more players to join! 🎮
 When 3+ players join, host can start game with "Start Game" button
 
 ═══════════════════════════════════════════════════════════════════════════════
+
+
+
+
+
+
+
+// Example 2: Shows the order of events that occur when a player submits an answer.
+
+CLIENT SIDE                     HOST SIDE
+-----------                     ---------
+
+        [UI Click] 
+    ↓
+[ClientNetworkManager.SubmitAnswer()]
+↓
+[Transport.SendToServer(JSON)]
+↓
+╔════════════════════════════════════╗
+║      Network Boundary              ║
+    ╚════════════════════════════════════╝
+    ↓
+[Transport.OnMessageReceived] ← Event fires
+    ↓
+[HostNetworkManager.HandleMessageReceived()]
+↓
+[ProcessMessage()] ← Routes by message type
+    ↓
+[HandleSubmitAnswer()] ← Extracts data
+    ↓
+[GameSessionManager.SubmitAnswer()] ← Game logic
+    ↓
+[OnAnswerSubmitted event] ← Game fires event
+    ↓
+[HostNetworkManager.HandleAnswerSubmitted()] ← Optional
+    ↓
+[BroadcastToAll()] ← If needed
+    ↓
+    ╔════════════════════════════════════╗
+    ║      Network Boundary              ║
+    ╚════════════════════════════════════╝
+    ↓
+[All Clients Receive Update]
 */
