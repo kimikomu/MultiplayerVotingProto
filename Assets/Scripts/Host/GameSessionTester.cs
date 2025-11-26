@@ -32,7 +32,6 @@ namespace Host
         
         private void OnEnable()
         {
-            // Subscribe to events for logging
             sessionManager.OnStateChanged += HandleStateChanged;
             sessionManager.OnPlayerJoined += HandlePlayerJoined;
             sessionManager.OnPlayerLeft += HandlePlayerLeft;
@@ -109,6 +108,7 @@ namespace Host
             }
         }
         
+        // Add a player directly to the lobby without spawning a client instance
         private void AddDirectPlayer(string testPlayerName)
         {
             var result = sessionManager.AddPlayer(testPlayerName);
@@ -122,6 +122,7 @@ namespace Host
             }
         }
         
+        // Spawn a client instance for the player and connect to the server
         private void AddNetworkedClient(string testPlayerName)
         {
             if (clientPrefab == null)
@@ -137,7 +138,8 @@ namespace Host
             var clientNetwork = clientInstance.GetComponent<Client.ClientNetworkManager>();
             if (clientNetwork != null)
             {
-                clientNetwork.ConnectToServer(testPlayerName);
+                clientNetwork.ConnectToServer(testPlayerName);  // Connecting to the server will also add the player
+                                                                // to the lobby at HandlePlayerJoined
             }
             
             Debug.Log($"[Tester] Spawned networked client: {testPlayerName}");
@@ -145,25 +147,20 @@ namespace Host
         
         private void RemoveTestPlayer(int index)
         {
-            if (useNetworkedClients)
+            if (useNetworkedClients && _clientInstances.Count > 0)
             {
-                if (_clientInstances.Count > 0)
-                {
-                    GameObject clientToRemove = _clientInstances[index];
-                    _clientInstances.RemoveAt(index);
-                    Destroy(clientToRemove);
-                    Debug.Log($"[Tester] Removed networked client at index {index}");
-                }
+                // Remove the client instance from the scene
+                GameObject clientToRemove = _clientInstances[index];
+                _clientInstances.RemoveAt(index);
+                Destroy(clientToRemove);
+                Debug.Log($"[Tester] Removed networked client at index {index}");
             }
-            else
-            {
-                if (_testPlayerIds.Count > 0)
-                {
-                    string id = _testPlayerIds[index];
-                    sessionManager.RemovePlayer(id);
-                    _testPlayerIds.RemoveAt(index);
-                }
-            }
+            
+            // Remove the player from the lobby
+            if (_testPlayerIds.Count <= 0) return;
+            string id = _testPlayerIds[index];
+            sessionManager.RemovePlayer(id);
+            _testPlayerIds.RemoveAt(index);
         }
         
         public void StartGame()
@@ -187,22 +184,22 @@ namespace Host
                 return;
             }
 
-            string[] sampleAnswers = new[] 
+            string[] sampleAnswers =
             {
-                "strawberry",
+                "pain",
                 "meatloaf",
                 "onion",
                 "pickles",
                 "broccoli"
             };
-
+            
             for (int i = 0; i < _testPlayerIds.Count; i++)
             {
                 string answer = sampleAnswers[i % sampleAnswers.Length];
                 sessionManager.SubmitAnswer(_testPlayerIds[i], answer);
             }
 
-            Debug.Log($"[Tester] Submitted {_testPlayerIds.Count} answers");
+            Debug.Log($"[Tester] Submitted {_testPlayerIds.Count.ToString()} answers");
         }
         
         public void SubmitAllVotes()
@@ -237,7 +234,16 @@ namespace Host
         
         private void HandlePlayerJoined(PlayerData player)
         {
-            Debug.Log($"[Tester] Player Joined: {player.playerName}");
+            if (useNetworkedClients)
+            {
+                // Add the player to the lobby
+                _testPlayerIds.Add(player.playerId);
+                Debug.Log($"[Tester] Player Joined by Network: {player.playerName}. Assigned ID: {player.playerId}");
+            }
+            else
+            {
+                Debug.Log($"[Tester] Added Direct Player: {player.playerName}");
+            }
         }
         
         private void HandlePlayerLeft(string playerId)

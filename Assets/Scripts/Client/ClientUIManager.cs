@@ -13,6 +13,7 @@ namespace Client
         [Header("UI Panels")]
         [SerializeField] private GameObject joinPanel;
         [SerializeField] private GameObject waitingPanel;
+        [SerializeField] private GameObject promptPanel;
         
         [Header("Waiting UI")]
         [SerializeField] private TextMeshProUGUI waitingText;
@@ -21,6 +22,10 @@ namespace Client
         [SerializeField] private TMP_InputField playerNameInput;
         [SerializeField] private Button joinButton;
         [SerializeField] private TextMeshProUGUI joinStatusText;
+        
+        [Header("Prompt UI")]
+        [SerializeField] private TextMeshProUGUI promptDisplayText;
+        [SerializeField] private TextMeshProUGUI promptTimerText;
         
         private GameState _currentState = GameState.Lobby;
 
@@ -33,13 +38,19 @@ namespace Client
         private void OnEnable()
         {
             joinButton?.onClick.AddListener(OnJoinClicked);
+            
             networkManager.OnJoinResponse += HandleJoinResponse;
+            networkManager.OnStateChanged += HandleStateChanged;
+            networkManager.OnPromptReceived += HandlePromptReceived;
         }
         
         private void OnDisable()
         {
             joinButton?.onClick.RemoveListener(OnJoinClicked);
+            
             networkManager.OnJoinResponse -= HandleJoinResponse;
+            networkManager.OnStateChanged -= HandleStateChanged;
+            networkManager.OnPromptReceived -= HandlePromptReceived;
         }
         
         private void Start()
@@ -79,10 +90,36 @@ namespace Client
             }
         }
         
+        private void HandleStateChanged(Payloads.StateChangedPayload payload)
+        {
+            if (System.Enum.TryParse(payload.newState, out GameState newState))
+            {
+                _currentState = newState;
+
+                switch (newState)
+                {
+                    case GameState.Lobby:
+                        ShowPanel(waitingPanel);
+                        break;
+                    case GameState.Prompt:
+                        ShowPanel(promptPanel);
+                        break;
+                }
+            }
+        }
+
+        private void HandlePromptReceived(Payloads.PromptPayload payload)
+        {
+            promptDisplayText.text = payload.promptText;
+            float timeLimit = payload.timeLimit;
+            promptTimerText.text = $"Time Limit: {timeLimit}s";
+        }
+        
         private void ShowPanel(GameObject panel)
         {
             joinPanel?.SetActive(panel == joinPanel);
             waitingPanel?.SetActive(panel == waitingPanel);
+            promptPanel?.SetActive(panel == promptPanel);
         }
     }
 }

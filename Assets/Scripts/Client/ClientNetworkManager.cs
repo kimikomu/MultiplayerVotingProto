@@ -13,10 +13,17 @@ namespace Client
         
         private string _myPlayerId;
         private string _myPlayerName;
+        private float heartbeatTimer = 0f;
+        private const float HEARTBEAT_INTERVAL = 2f;
         
         // Events for UI
         public event Action<Payloads.JoinResponsePayload> OnJoinResponse;
         public event Action<Payloads.PlayerJoinedPayload> OnPlayerJoined;
+        public event Action<Payloads.StateChangedPayload> OnStateChanged;
+        public event Action<Payloads.PromptPayload> OnPromptReceived;
+        
+        public string MyPlayerId => _myPlayerId;
+        public string MyPlayerName => _myPlayerName;
         
         private void Awake()
         {
@@ -42,6 +49,19 @@ namespace Client
             }
         }
         
+        private void Update()
+        {
+            if (transport.IsConnected && !string.IsNullOrEmpty(_myPlayerId))
+            {
+                heartbeatTimer += Time.deltaTime;
+                if (heartbeatTimer >= HEARTBEAT_INTERVAL)
+                {
+                    SendHeartbeat();
+                    heartbeatTimer = 0f;
+                }
+            }
+        }
+        
         public void ConnectToServer(string playerName)
         {
             _myPlayerName = playerName;
@@ -49,6 +69,12 @@ namespace Client
             
             // Wait a frame then send join request
             Invoke(nameof(SendJoinRequest), 0.1f);
+        }
+        
+        public void Disconnect()
+        {
+            transport.Disconnect();
+            _myPlayerId = null;
         }
         
         private void SendJoinRequest()
@@ -59,6 +85,11 @@ namespace Client
             };
 
             SendToServer(MessageTypes.JOIN_REQUEST, JsonUtility.ToJson(payload));
+        }
+        
+        private void SendHeartbeat()
+        {
+            SendToServer(MessageTypes.HEARTBEAT, "{}");
         }
         
         private void SendToServer(string messageType, string payloadJson)
@@ -103,6 +134,18 @@ namespace Client
             OnPlayerJoined?.Invoke(payload);
         }
         
+        private void HandleStateChanged(NetworkMessage message)
+        {
+            Payloads.StateChangedPayload payload = JsonUtility.FromJson<Payloads.StateChangedPayload>(message.payload);
+            OnStateChanged?.Invoke(payload);
+        }
+
+        private void HandlePromptSent(NetworkMessage message)
+        {
+            Payloads.PromptPayload payload = JsonUtility.FromJson<Payloads.PromptPayload>(message.payload);
+            OnPromptReceived?.Invoke(payload);
+        }
+        
         private void ProcessMessage(NetworkMessage message)
         {
             switch (message.type)
@@ -113,9 +156,15 @@ namespace Client
                 case MessageTypes.PLAYER_JOINED:
                     HandlePlayerJoined(message);
                     break;
+                case MessageTypes.STATE_CHANGED:
+                    HandleStateChanged(message);
+                    break;
+                case MessageTypes.PROMPT_SENT:
+                    HandlePromptSent(message);
+                    break;
             }
         }
-                
+        
         private void OnDestroy()
         {
             if (transport != null && transport.IsConnected)

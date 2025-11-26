@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Linq;
 using Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,10 +15,16 @@ namespace Host
         
         [Header("UI Panels")]
         [SerializeField] private GameObject lobbyPanel;
+        [SerializeField] private GameObject promptPanel;
         
         [Header("Lobby UI")]
+        [SerializeField] private Button startGameButton;
         [SerializeField] private TextMeshProUGUI playerListText;
         [SerializeField] private TextMeshProUGUI roomCodeText;
+        
+        [Header("Prompt UI")]
+        [SerializeField] private TextMeshProUGUI promptText;
+        [SerializeField] private TextMeshProUGUI promptTimerText;
         
         private void Awake()
         {
@@ -32,12 +40,14 @@ namespace Host
         
         private void OnEnable()
         {
+            sessionManager.OnStateChanged += HandleStateChanged;
             sessionManager.OnPlayerJoined += HandlePlayerJoined;
             sessionManager.OnPlayerLeft += HandlePlayerLeft;
         }
 
         private void OnDisable()
         {
+            sessionManager.OnStateChanged -= HandleStateChanged;
             sessionManager.OnPlayerJoined -= HandlePlayerJoined;
             sessionManager.OnPlayerLeft -= HandlePlayerLeft;
         }
@@ -57,6 +67,26 @@ namespace Host
             }
         }
         
+        public void OnStartGameClicked()
+        {
+            sessionManager.StartGame();
+        }
+        
+        private void HandleStateChanged(GameState previousState, GameState newState)
+        {
+            ShowPanel(newState);
+
+            switch (newState)
+            {
+                case GameState.Lobby:
+                    UpdateLobbyUI();
+                    break;
+                case GameState.Prompt:
+                    UpdatePromptUI();
+                    break;
+            }
+        }
+        
         private void HandlePlayerJoined(PlayerData player)
         {
             UpdateLobbyUI();
@@ -70,19 +100,32 @@ namespace Host
         private void ShowPanel(GameState state)
         {
             lobbyPanel?.SetActive(state == GameState.Lobby);
+            promptPanel?.SetActive(true);
         }
         
         private void UpdateLobbyUI()
         {
-            if (playerListText != null)
+            if (!playerListText)
             {
-                string playerList = "Players:\n";
-                foreach (var player in sessionManager.Players.Values)
-                {
-                    playerList += $"• {player.playerName}\n";
-                }
-                playerListText.text = playerList;
+                return;
             }
+            
+            string playerListString = "Players:\n";
+            
+            var players = sessionManager.Players.Values.ToList();
+            foreach (var player in players)
+            {
+                playerListString += $"• {player.playerName}\n";
+            }
+            playerListText.text = playerListString;
+            
+            startGameButton.interactable = (players.Count() >= sessionManager.MinPlayers);
+        }
+        
+        private void UpdatePromptUI()
+        {
+            promptText.text = sessionManager.GetCurrentPrompt();
+            promptTimerText.text = sessionManager.StateTimer.ToString(CultureInfo.InvariantCulture);
         }
     }
 }

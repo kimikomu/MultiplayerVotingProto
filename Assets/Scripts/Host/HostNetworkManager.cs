@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using Core;
 using Network;
 using UnityEngine;
@@ -42,6 +44,7 @@ namespace Host
             transport.OnClientDisconnected += HandleClientDisconnected;
             transport.OnMessageReceived += HandleMessageReceived;
             
+            sessionManager.OnStateChanged += HandleStateChanged;
             sessionManager.OnPlayerJoined += HandlePlayerJoined;
             sessionManager.OnPlayerLeft += HandlePlayerLeft;
         } 
@@ -52,6 +55,7 @@ namespace Host
             transport.OnClientDisconnected -= HandleClientDisconnected;
             transport.OnMessageReceived -= HandleMessageReceived;
             
+            sessionManager.OnStateChanged -= HandleStateChanged;
             sessionManager.OnPlayerJoined -= HandlePlayerJoined;
             sessionManager.OnPlayerLeft -= HandlePlayerLeft;
         }
@@ -95,7 +99,7 @@ namespace Host
                 NetworkMessage message = NetworkMessage.FromJson(messageJson);
                 ProcessMessage(senderId, message);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Debug.LogError($"Failed to parse message: {e.Message}");
             }
@@ -109,13 +113,15 @@ namespace Host
                 case MessageTypes.JOIN_REQUEST:
                     HandleJoinRequest(clientId, message);
                     break;
+                case MessageTypes.HEARTBEAT:
+                    HandleHeartbeat(clientId);
+                    break;
                 default:
                     Debug.LogWarning($"Unknown message type: {message.type}");
                     break;
             }
         }
         
-        //Game Event Handlers
         private void HandleJoinRequest(string clientId, NetworkMessage message)
         {
             Payloads.JoinRequestPayload request = JsonUtility.FromJson<Payloads.JoinRequestPayload>(message.payload);
@@ -146,6 +152,34 @@ namespace Host
             Debug.Log($"Join request from {request.playerName}: {(result.success ? "SUCCESS" : result.reason)}");
         }
         
+        private void HandleHeartbeat(string clientId)
+        {
+            if (_clientToPlayerId.TryGetValue(clientId, out string playerId))
+            {
+                sessionManager.UpdatePlayerHeartbeat(playerId);
+            }
+        }
+        
+        // Game Event Handlers
+        private void HandleStateChanged(GameState previousState, GameState newState)
+        {
+            Payloads.StateChangedPayload payload = new Payloads.StateChangedPayload
+            {
+                newState = newState.ToString(),
+                timeLimit = GetTimeLimit(newState)
+            };
+
+            BroadcastToAll(MessageTypes.STATE_CHANGED, JsonUtility.ToJson(payload));
+
+            // Send state-specific data
+            switch (newState)
+            {
+                case GameState.Prompt:
+                    SendPrompt();
+                    break;
+            }
+        }
+        
         private void HandlePlayerJoined(PlayerData player)
         {
             Payloads.PlayerJoinedPayload payload = new Payloads.PlayerJoinedPayload
@@ -165,10 +199,26 @@ namespace Host
         }
         
         // Sending Messages
+        private void SendPrompt()
+        {
+            Payloads.PromptPayload payload = new Payloads.PromptPayload
+            {
+                promptText = sessionManager.GetCurrentPrompt(),
+                timeLimit = GetTimeLimit(GameState.Submit)
+            };
+
+            BroadcastToAll(MessageTypes.PROMPT_SENT, JsonUtility.ToJson(payload));
+        }
+        
         private void BroadcastToAll(string messageType, string payloadJson)
         {
             NetworkMessage message = new NetworkMessage(messageType, payloadJson, "host");
             transport.SendToAllClients(message.ToJson());
+        }
+        
+        private float GetTimeLimit(GameState state)
+        {
+            return Enum.IsDefined(typeof(GameState), state) ? sessionManager.StateTimer : 0f;
         }
     }
 }

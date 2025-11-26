@@ -34,12 +34,15 @@ namespace Host
         public event Action<GameState, GameState> OnStateChanged;
         public event Action<PlayerData> OnPlayerJoined;
         public event Action<string> OnPlayerLeft;
+        public event Action<string> OnPromptSent;
         public event Action<string, string> OnAnswerSubmitted;
         public event Action<string, string> OnVoteSubmitted;
 
         public GameState CurrentState => _currentState;
         public IReadOnlyDictionary<string, PlayerData> Players => _players;
-        public int PlayerCount => _players.Count;
+
+        public int MinPlayers => minPlayers;
+        public float StateTimer => _stateTimer;
 
         private void Awake()
         {
@@ -134,7 +137,7 @@ namespace Host
                 return;
             }
             
-            _currentPromptIndex = 0;
+            _currentPrompt = prompts[0];
             ChangeState(GameState.Prompt);
         }
         
@@ -253,6 +256,11 @@ namespace Host
         
         
         // Game Logic
+        public string GetCurrentPrompt()
+        {
+            return _currentPrompt;
+        }
+        
         public void SubmitAnswer(string playerId, string answer)
         {
             if (_currentState != GameState.Submit)

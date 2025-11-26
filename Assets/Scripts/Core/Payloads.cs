@@ -25,6 +25,13 @@ namespace Core
             public string playerId;
             public string playerName;
         }
+
+        [Serializable]
+        public class PromptPayload
+        {
+            public string promptText;
+            public float timeLimit;
+        }
         
         [Serializable]
         public class VotingOption
