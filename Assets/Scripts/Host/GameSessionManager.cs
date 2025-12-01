@@ -34,7 +34,6 @@ namespace Host
         public event Action<GameState, GameState> OnStateChanged;
         public event Action<PlayerData> OnPlayerJoined;
         public event Action<string> OnPlayerLeft;
-        public event Action<string> OnPromptSent;
         public event Action<string, string> OnAnswerSubmitted;
         public event Action<string, string> OnVoteSubmitted;
 
@@ -92,7 +91,7 @@ namespace Host
             PlayerData newPlayer = new PlayerData(playerId, playerName);
             _players.Add(newPlayer.playerId, newPlayer);
 
-            Debug.Log($"Player joined: {playerName} ({playerId})");
+            Debug.Log($"[GAME SESSION MANAGER] Player joined: {playerName} ({playerId})");
             OnPlayerJoined?.Invoke(newPlayer);
 
             return (true, playerId, "");
@@ -102,7 +101,7 @@ namespace Host
         {
             if (_players.ContainsKey(playerId))
             {
-                Debug.Log($"Player left: {_players[playerId].playerName}");
+                Debug.Log($"[GAME SESSION MANAGER] Player left: {_players[playerId].playerName}");
                 _players.Remove(playerId);
                 OnPlayerLeft?.Invoke(playerId);
 
@@ -133,7 +132,7 @@ namespace Host
         {
             if (!CanStartGame())
             {
-                Debug.LogWarning("Cannot start game: not enough players or not in lobby");
+                Debug.LogWarning("[GAME SESSION MANAGER] Cannot start game: not enough players or not in lobby");
                 return;
             }
             
@@ -146,7 +145,7 @@ namespace Host
             GameState previousState = _currentState;
             _currentState = newState;
 
-            Debug.Log($"State changed: {previousState} -> {newState}");
+            Debug.Log($"[GAME SESSION MANAGER] State change: {previousState} -> {newState}");
             OnStateChanged?.Invoke(previousState, newState);
 
             switch (newState)
@@ -177,15 +176,15 @@ namespace Host
             switch (_currentState)
             {
                 case GameState.Prompt:
-                    Debug.Log($"Prompt going to Submit!");
+                    Debug.Log($"[GAME SESSION MANAGER] Prompt going to Submit!");
                     ChangeState(GameState.Submit);
                     break;
                 case GameState.Submit:
-                    Debug.Log($"Submit going to Vote!");
+                    Debug.Log($"[GAME SESSION MANAGER] Submit going to Vote!");
                     ChangeState(GameState.Vote);
                     break;
                 case GameState.Vote:
-                    Debug.Log($"Vote going to Reveal!");
+                    Debug.Log($"[GAME SESSION MANAGER] Vote going to Reveal!");
                     ChangeState(GameState.Reveal);
                     break;
                 case GameState.Reveal:
@@ -193,12 +192,12 @@ namespace Host
                     _currentPromptIndex++;
                     if (_currentPromptIndex < prompts.Length)
                     {
-                        Debug.Log($"Reveal going to Prompt!");
+                        Debug.Log($"[GAME SESSION MANAGER] Reveal going to Prompt!");
                         ChangeState(GameState.Prompt);
                     }
                     else
                     {
-                        Debug.Log($"Reveal going to GameOver!");
+                        Debug.Log($"[GAME SESSION MANAGER] Reveal going to GameOver!");
                         ChangeState(GameState.GameOver);
                     }
                     break;
@@ -222,7 +221,7 @@ namespace Host
                 prompts[_currentPromptIndex] : "Default prompt";
             
             _stateTimer = promptTimeLimit;
-            Debug.Log($"Prompt: {_currentPrompt}");
+            Debug.Log($"[GAME SESSION MANAGER] Prompt: {_currentPrompt}");
         }
         
         private void OnEnterSubmit()
@@ -244,7 +243,7 @@ namespace Host
         private void OnEnterGameOver()
         {
             _stateTimer = 0f;
-            Debug.Log("Game Over!");
+            Debug.Log("[GAME SESSION MANAGER] Game Over!");
             
             // Display final scores
             var sortedPlayers = _players.Values.OrderByDescending(p => p.score).ToList();
@@ -265,13 +264,13 @@ namespace Host
         {
             if (_currentState != GameState.Submit)
             {
-                Debug.LogWarning("Not in Submit state");
+                Debug.LogWarning("[GAME SESSION MANAGER] Not in Submit state");
                 return;
             }
 
             if (!_players.ContainsKey(playerId))
             {
-                Debug.LogWarning($"Unknown player: {playerId}");
+                Debug.LogWarning($"[GAME SESSION MANAGER] Unknown player: {playerId}");
                 return;
             }
 
@@ -311,25 +310,25 @@ namespace Host
         {
             if (_currentState != GameState.Vote)
             {
-                Debug.LogWarning("Not in Vote state");
+                Debug.LogWarning("[GAME SESSION MANAGER] Not in Vote state");
                 return;
             }
 
             if (!_players.ContainsKey(playerId))
             {
-                Debug.LogWarning($"Unknown player: {playerId}");
+                Debug.LogWarning($"[GAME SESSION MANAGER] Unknown player: {playerId}");
                 return;
             }
 
             // Players can't vote for their own answer
             if (selectedOptionId == playerId)
             {
-                Debug.LogWarning($"Player {playerId} tried to vote for their own answer");
+                Debug.LogWarning($"[GAME SESSION MANAGER] Player {playerId} tried to vote for their own answer");
                 return;
             }
 
             playerVotes[playerId] = selectedOptionId;
-            Debug.Log($"Vote from {_players[playerId].playerName} for option {selectedOptionId}");
+            Debug.Log($"[GAME SESSION MANAGER] Vote from {_players[playerId].playerName} for option {selectedOptionId}");
             OnVoteSubmitted?.Invoke(playerId, selectedOptionId);
 
             // Auto-advance if everyone voted

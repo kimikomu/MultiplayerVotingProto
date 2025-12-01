@@ -63,7 +63,7 @@ namespace Host
         public void StartHost()
         {
             transport.StartServer(serverPort);
-            Debug.Log($"Host started on port {serverPort}");
+            Debug.Log($"[HOST] Started on port {serverPort}");
         }
         
         public void StopHost()
@@ -71,18 +71,18 @@ namespace Host
             transport.StopServer();
             _clientToPlayerId.Clear();
             _playerIdToClient.Clear();
-            Debug.Log("Host stopped");
+            Debug.Log("[HOST] Stopped");
         }
         
         // Network Event Handlers
         private void HandleClientConnected(string clientId)
         {
-            Debug.Log($"Client connected: {clientId}");
+            Debug.Log($"[HOST] Client connected: {clientId}");
         }
 
         private void HandleClientDisconnected(string clientId)
         {
-            Debug.Log($"Client disconnected: {clientId}");
+            Debug.Log($"[HOST] Client disconnected: {clientId}");
             
             if (_clientToPlayerId.TryGetValue(clientId, out string playerId))
             {
@@ -101,7 +101,7 @@ namespace Host
             }
             catch (Exception e)
             {
-                Debug.LogError($"Failed to parse message: {e.Message}");
+                Debug.LogError($"[HOST] Failed to parse message: {e.Message}");
             }
         }
         
@@ -116,8 +116,21 @@ namespace Host
                 case MessageTypes.HEARTBEAT:
                     HandleHeartbeat(clientId);
                     break;
+                case MessageTypes.PLAYER_JOINED:
+                    // Debug.Log("[HOST] PLAYER_JOINED message received from client. Ignoring.");
+                    break;
+                case MessageTypes.JOIN_RESPONSE:
+                    // Debug.Log("[HOST] JOIN_RESPONSE message received from client. Ignoring.");
+                    break;
+
+                case MessageTypes.STATE_CHANGED:
+                    // Debug.Log("[HOST] STATE_CHANGED message received from client. Ignoring.");
+                    break;
+                case MessageTypes.PROMPT_SENT:
+                    // Debug.Log("[HOST] PROMPT_SENT message received from client. Ignoring.");
+                    break;
                 default:
-                    Debug.LogWarning($"Unknown message type: {message.type}");
+                    Debug.LogWarning($"[HOST] Unknown message type: {message.type}");
                     break;
             }
         }
@@ -149,7 +162,7 @@ namespace Host
             NetworkMessage responseMsg = new NetworkMessage(MessageTypes.JOIN_RESPONSE, JsonUtility.ToJson(response), "host");
             transport.SendToClient(clientId, responseMsg.ToJson());
             
-            Debug.Log($"Join request from {request.playerName}: {(result.success ? "SUCCESS" : result.reason)}");
+            Debug.Log($"[HOST] Join request from {request.playerName}: {(result.success ? "SUCCESS" : result.reason)}");
         }
         
         private void HandleHeartbeat(string clientId)

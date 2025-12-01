@@ -107,7 +107,7 @@ namespace Client
             }
             catch (Exception e)
             {
-                Debug.LogError($"Failed to parse message: {e.Message}");
+                Debug.LogError($"[CLIENT] Failed to parse message: {e.Message}");
             }
         }
         
@@ -118,11 +118,11 @@ namespace Client
             if (payload.success)
             {
                 _myPlayerId = payload.playerId;
-                Debug.Log($"Successfully joined as {payload.playerName} ({_myPlayerId})");
+                Debug.Log($"[CLIENT] Successfully joined as {payload.playerName} ({_myPlayerId})");
             }
             else
             {
-                Debug.LogError($"Failed to join: {payload.reason}");
+                Debug.LogError($"[CLIENT] Failed to join: {payload.reason}");
             }
 
             OnJoinResponse?.Invoke(payload);
@@ -154,13 +154,17 @@ namespace Client
                     HandleJoinResponse(message);
                     break;
                 case MessageTypes.PLAYER_JOINED:
-                    HandlePlayerJoined(message);
+                    // HandlePlayerJoined(message);
+                    Debug.Log($"[CLIENT] PLAYER_JOINED message type");
                     break;
                 case MessageTypes.STATE_CHANGED:
                     HandleStateChanged(message);
                     break;
                 case MessageTypes.PROMPT_SENT:
                     HandlePromptSent(message);
+                    break;
+                default:
+                    // Debug.LogWarning($"[CLIENT] Unknown message type: {message.type}");
                     break;
             }
         }
