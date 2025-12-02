@@ -116,13 +116,15 @@ namespace Host
                 case MessageTypes.HEARTBEAT:
                     HandleHeartbeat(clientId);
                     break;
+                case MessageTypes.SUBMIT_ANSWER:
+                    HandleSubmitAnswer(clientId, message);
+                    break;
                 case MessageTypes.PLAYER_JOINED:
                     // Debug.Log("[HOST] PLAYER_JOINED message received from client. Ignoring.");
                     break;
                 case MessageTypes.JOIN_RESPONSE:
                     // Debug.Log("[HOST] JOIN_RESPONSE message received from client. Ignoring.");
                     break;
-
                 case MessageTypes.STATE_CHANGED:
                     // Debug.Log("[HOST] STATE_CHANGED message received from client. Ignoring.");
                     break;
@@ -171,6 +173,15 @@ namespace Host
             {
                 sessionManager.UpdatePlayerHeartbeat(playerId);
             }
+        }
+        
+        private void HandleSubmitAnswer(string clientId, NetworkMessage message)
+        {
+            if (!_clientToPlayerId.TryGetValue(clientId, out string playerId))
+                return;
+
+            Payloads.SubmitAnswerPayload payload = JsonUtility.FromJson<Payloads.SubmitAnswerPayload>(message.payload);
+            sessionManager.SubmitAnswer(playerId, payload.answerText);
         }
         
         // Game Event Handlers

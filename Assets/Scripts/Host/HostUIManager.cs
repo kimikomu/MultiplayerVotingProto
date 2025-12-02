@@ -16,6 +16,7 @@ namespace Host
         [Header("UI Panels")]
         [SerializeField] private GameObject lobbyPanel;
         [SerializeField] private GameObject promptPanel;
+        [SerializeField] private GameObject submitPanel;
         
         [Header("Lobby UI")]
         [SerializeField] private Button startGameButton;
@@ -25,6 +26,9 @@ namespace Host
         [Header("Prompt UI")]
         [SerializeField] private TextMeshProUGUI promptText;
         [SerializeField] private TextMeshProUGUI promptTimerText;
+        
+        [Header("Submit UI")]
+        [SerializeField] private TextMeshProUGUI submitStatusText;
         
         private void Awake()
         {
@@ -84,6 +88,9 @@ namespace Host
                 case GameState.Prompt:
                     UpdatePromptUI();
                     break;
+                case GameState.Submit:
+                    UpdateSubmitUI();
+                    break;
             }
         }
         
@@ -100,7 +107,8 @@ namespace Host
         private void ShowPanel(GameState state)
         {
             lobbyPanel?.SetActive(state == GameState.Lobby);
-            promptPanel?.SetActive(true);
+            promptPanel?.SetActive(state == GameState.Prompt || state == GameState.Submit);
+            submitPanel?.SetActive(state == GameState.Submit);
         }
         
         private void UpdateLobbyUI()
@@ -126,6 +134,11 @@ namespace Host
         {
             promptText.text = sessionManager.GetCurrentPrompt();
             promptTimerText.text = sessionManager.StateTimer.ToString(CultureInfo.InvariantCulture);
+        }
+        
+        private void UpdateSubmitUI()
+        {
+            submitStatusText.text = "Waiting for players to\nsubmit answers...";
         }
     }
 }

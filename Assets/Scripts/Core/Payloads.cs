@@ -34,6 +34,13 @@ namespace Core
         }
         
         [Serializable]
+        public class SubmitAnswerPayload
+        {
+            public string playerId;
+            public string answerText;
+        }
+        
+        [Serializable]
         public class VotingOption
         {
             public string optionId;

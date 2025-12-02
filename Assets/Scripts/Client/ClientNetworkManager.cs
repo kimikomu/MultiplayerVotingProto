@@ -96,6 +96,17 @@ namespace Client
             SendToServer(MessageTypes.HEARTBEAT, "{}");
         }
         
+        public void SubmitAnswer(string answer)
+        {
+            Payloads.SubmitAnswerPayload payload = new Payloads.SubmitAnswerPayload
+            {
+                playerId = _myPlayerId,
+                answerText = answer
+            };
+
+            SendToServer(MessageTypes.SUBMIT_ANSWER, JsonUtility.ToJson(payload));
+        }
+        
         private void SendToServer(string messageType, string payloadJson)
         {
             NetworkMessage message = new NetworkMessage(messageType, payloadJson, _myPlayerId);

@@ -11,6 +11,7 @@ namespace Client
         [SerializeField] private GameObject joinPanel;
         [SerializeField] private GameObject waitingPanel;
         [SerializeField] private GameObject promptPanel;
+        [SerializeField] private GameObject submitPanel;
         
         [Header("Waiting UI")]
         [SerializeField] private TextMeshProUGUI waitingText;
@@ -23,6 +24,11 @@ namespace Client
         [Header("Prompt UI")]
         [SerializeField] private TextMeshProUGUI promptDisplayText;
         [SerializeField] private TextMeshProUGUI promptTimerText;
+        
+        [Header("Submit UI")]
+        [SerializeField] private TMP_InputField answerInput;
+        [SerializeField] private Button submitAnswerButton;
+        [SerializeField] private TextMeshProUGUI answerSubmittedText;
         
         private GameState _currentState = GameState.Lobby;
         private ClientNetworkManager _networkManager;
@@ -74,6 +80,20 @@ namespace Client
                 joinStatusText.text = "Connecting...";
         }
         
+        public void OnSubmitAnswerClicked()
+        {
+            string answer = answerInput.text.Trim();
+            if (string.IsNullOrEmpty(answer))
+                return;
+
+            _networkManager.SubmitAnswer(answer);
+            submitAnswerButton.interactable = false;
+            answerInput.interactable = false;
+            
+            if (answerSubmittedText != null)
+                answerSubmittedText.text = "Answer submitted! Waiting for others...";
+        }
+        
         private void HandleJoinResponse(Payloads.JoinResponsePayload payload)
         {
             if (payload.success)
@@ -104,6 +124,10 @@ namespace Client
                     case GameState.Prompt:
                         ShowPanel(promptPanel);
                         break;
+                    case GameState.Submit:
+                        ShowPanel(submitPanel);
+                        ResetSubmitUI();
+                        break;
                 }
             }
         }
@@ -119,7 +143,16 @@ namespace Client
         {
             joinPanel?.SetActive(panel == joinPanel);
             waitingPanel?.SetActive(panel == waitingPanel);
-            promptPanel?.SetActive(panel == promptPanel);
+            promptPanel?.SetActive(panel == promptPanel || panel == submitPanel);
+            submitPanel?.SetActive(panel == submitPanel);
+        }
+        
+        private void ResetSubmitUI()
+        {
+            answerInput.text = "";
+            answerInput.interactable = true;
+        
+            submitAnswerButton.interactable = true;
         }
     }
 }
