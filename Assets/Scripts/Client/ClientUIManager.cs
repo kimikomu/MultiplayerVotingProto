@@ -7,9 +7,6 @@ namespace Client
 {
     public class ClientUIManager : MonoBehaviour
     {
-        [Header("References")]
-        [SerializeField] private ClientNetworkManager networkManager;
-
         [Header("UI Panels")]
         [SerializeField] private GameObject joinPanel;
         [SerializeField] private GameObject waitingPanel;
@@ -28,29 +25,32 @@ namespace Client
         [SerializeField] private TextMeshProUGUI promptTimerText;
         
         private GameState _currentState = GameState.Lobby;
+        private ClientNetworkManager _networkManager;
 
         private void Awake()
         {
-            if (networkManager == null)
-                networkManager = GetComponent<ClientNetworkManager>();
+            _networkManager = gameObject.GetComponent<ClientNetworkManager>();
+            
+            if (_networkManager == null)
+                _networkManager = GetComponent<ClientNetworkManager>();
         }
         
         private void OnEnable()
         {
             joinButton?.onClick.AddListener(OnJoinClicked);
             
-            networkManager.OnJoinResponse += HandleJoinResponse;
-            networkManager.OnStateChanged += HandleStateChanged;
-            networkManager.OnPromptReceived += HandlePromptReceived;
+            _networkManager.OnJoinResponse += HandleJoinResponse;
+            _networkManager.OnStateChanged += HandleStateChanged;
+            _networkManager.OnPromptReceived += HandlePromptReceived;
         }
         
         private void OnDisable()
         {
             joinButton?.onClick.RemoveListener(OnJoinClicked);
             
-            networkManager.OnJoinResponse -= HandleJoinResponse;
-            networkManager.OnStateChanged -= HandleStateChanged;
-            networkManager.OnPromptReceived -= HandlePromptReceived;
+            _networkManager.OnJoinResponse -= HandleJoinResponse;
+            _networkManager.OnStateChanged -= HandleStateChanged;
+            _networkManager.OnPromptReceived -= HandlePromptReceived;
         }
         
         private void Start()
@@ -68,7 +68,7 @@ namespace Client
                 return;
             }
 
-            networkManager.ConnectToServer(playerName);
+            _networkManager.ConnectToServer(playerName);
             joinButton.interactable = false;
             if (joinStatusText != null)
                 joinStatusText.text = "Connecting...";

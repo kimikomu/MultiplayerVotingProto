@@ -9,11 +9,12 @@ namespace Client
     {
         [SerializeField] private string serverAddress = "localhost";
         [SerializeField] private int serverPort = 7777;
-        [SerializeField] private InMemoryTransport transport;
+        
+        private InMemoryTransport _transport;
         
         private string _myPlayerId;
         private string _myPlayerName;
-        private float heartbeatTimer = 0f;
+        private float _heartbeatTimer = 0f;
         private const float HEARTBEAT_INTERVAL = 2f;
         
         // Events for UI
@@ -27,45 +28,45 @@ namespace Client
         
         private void Awake()
         {
-            if (transport == null)
-            {
-                transport = GetComponent<InMemoryTransport>();
-            }
+            // Always create a new transport instance for this client
+            _transport = gameObject.AddComponent<InMemoryTransport>();
+            Debug.Log($"[ClientNetworkManager] Created new transport instance {_transport.GetInstanceID()} for client");
         }
         
         private void OnEnable()
         {
-            if (transport != null)
+            if (_transport != null)
             {
-                transport.OnMessageReceived += HandleMessageReceived;
+                _transport.OnMessageReceived += HandleMessageReceived;
             }
         }
         
         private void OnDisable()
         {
-            if (transport != null)
+            if (_transport != null)
             {
-                transport.OnMessageReceived -= HandleMessageReceived;
+                _transport.OnMessageReceived -= HandleMessageReceived;
             }
         }
         
         private void Update()
         {
-            if (transport.IsConnected && !string.IsNullOrEmpty(_myPlayerId))
+            if (_transport is null || !_transport.IsConnected || string.IsNullOrEmpty(_myPlayerId)) return;
+            
+            _heartbeatTimer += Time.deltaTime;
+            if (_heartbeatTimer >= HEARTBEAT_INTERVAL)
             {
-                heartbeatTimer += Time.deltaTime;
-                if (heartbeatTimer >= HEARTBEAT_INTERVAL)
-                {
-                    SendHeartbeat();
-                    heartbeatTimer = 0f;
-                }
+                SendHeartbeat();
+                _heartbeatTimer = 0f;
             }
         }
         
         public void ConnectToServer(string playerName)
         {
             _myPlayerName = playerName;
-            transport.Connect(serverAddress, serverPort);
+            
+            Debug.Log($"[ClientNetworkManager] {playerName} connecting with transport {_transport.GetInstanceID()}");
+            _transport.Connect(serverAddress, serverPort);
             
             // Wait a frame then send join request
             Invoke(nameof(SendJoinRequest), 0.1f);
@@ -73,7 +74,10 @@ namespace Client
         
         public void Disconnect()
         {
-            transport.Disconnect();
+            if (_transport != null)
+            {
+                _transport.Disconnect();
+            }
             _myPlayerId = null;
         }
         
@@ -95,7 +99,7 @@ namespace Client
         private void SendToServer(string messageType, string payloadJson)
         {
             NetworkMessage message = new NetworkMessage(messageType, payloadJson, _myPlayerId);
-            transport.SendToServer(message.ToJson());
+            _transport.SendToServer(message.ToJson());
         }
         
         private void HandleMessageReceived(string senderId, string messageJson)
@@ -164,16 +168,16 @@ namespace Client
                     HandlePromptSent(message);
                     break;
                 default:
-                    // Debug.LogWarning($"[CLIENT] Unknown message type: {message.type}");
+                    // Ignore unknown message types;
                     break;
             }
         }
         
         private void OnDestroy()
         {
-            if (transport != null && transport.IsConnected)
+            if (_transport != null && _transport.IsConnected)
             {
-                transport.Disconnect();
+                _transport.Disconnect();
             }
         }
     }
